@@ -1,5 +1,7 @@
 package br.ufpe.cin.android.podcast
 
+import br.ufpe.cin.android.podcast.db.ItemFeed
+import br.ufpe.cin.android.podcast.helpers.DateHelper
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserException
 import org.xmlpull.v1.XmlPullParserFactory
@@ -58,7 +60,8 @@ object Parser {
     fun readItem(parser: XmlPullParser): ItemFeed {
         var title: String? = null
         var link: String? = null
-        var pubDate: String? = null
+        var length: Int? = null
+        var pubDate: Long? = null
         var description: String? = null
         var imageLink: String? = null
         var downloadLink: String? = null
@@ -70,14 +73,28 @@ object Parser {
             when (parser.name) {
                 "title" -> title = readData(parser, "title")
                 "link" -> link = readData(parser, "link")
-                "pubDate" -> pubDate = readData(parser, "pubDate")
+                "pubDate" -> pubDate = DateHelper.parseToLong(readData(parser, "pubDate"))
                 "description" -> description = readData(parser, "description")
                 "itunes:image" -> imageLink = readAttribute(parser, "itunes:image", "href")
-                "enclosure" -> downloadLink = readAttribute(parser, "enclosure", "url")
+                "enclosure" -> {
+                    parser.require(XmlPullParser.START_TAG, null, "enclosure")
+                    downloadLink = parser.getAttributeValue(null, "url")
+                    length = parser.getAttributeValue(null, "length").toInt()
+                    parser.nextTag()
+                    parser.require(XmlPullParser.END_TAG, null, "enclosure")
+                }
                 else -> skip(parser)
             }
         }
-        return ItemFeed(title!!, link!!, pubDate!!, description!!, imageLink ?: "", downloadLink!!)
+        return ItemFeed(
+            title!!,
+            link!!,
+            length!!,
+            pubDate!!,
+            description!!,
+            imageLink ?: "",
+            downloadLink!!
+        )
     }
 
     // Processa atributos de forma parametrizada no feed.
