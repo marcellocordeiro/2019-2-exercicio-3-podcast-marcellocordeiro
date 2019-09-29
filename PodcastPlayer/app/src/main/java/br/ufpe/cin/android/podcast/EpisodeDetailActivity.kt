@@ -6,9 +6,12 @@ import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.text.HtmlCompat
+import br.ufpe.cin.android.podcast.db.AppDatabase
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.activity_episode_detail.*
+import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.sdk27.coroutines.onClick
+import org.jetbrains.anko.uiThread
 
 class EpisodeDetailActivity : AppCompatActivity() {
 
@@ -17,26 +20,37 @@ class EpisodeDetailActivity : AppCompatActivity() {
         setContentView(R.layout.activity_episode_detail)
 
         // Takes the ItemFeed object passed by the main activity
-        val itemDetails = intent.getParcelableExtra("item_details") as ItemFeed?
+        val itemUid = intent.getIntExtra("item_uid", -1)
 
-        if (itemDetails != null) {
-            val episodeImage = Picasso.get().load(itemDetails.imageLink)
-            episodeImage.into(episode_image)
-            episode_image.visibility = View.VISIBLE
+        if (itemUid == -1) {
+            finish()
+        }
 
-            episode_title.text = itemDetails.title
+        val db = AppDatabase.getInstance(this)
 
-            // Formats the episode's description
-            episode_description.text =
-                HtmlCompat.fromHtml(itemDetails.description, HtmlCompat.FROM_HTML_MODE_LEGACY)
-                    .trim()
+        doAsync {
+            val item = db.itemFeedDAO().getById(itemUid)!!
+            val episodeImage = Picasso.get().load(item.imageLink)
 
-            episode_link.apply {
-                // Opens the episode's link
-                onClick {
-                    val i = Intent(Intent.ACTION_VIEW)
-                    i.data = Uri.parse(itemDetails.link)
-                    startActivity(i)
+            uiThread {
+
+                episodeImage.into(episode_image)
+                episode_image.visibility = View.VISIBLE
+
+                episode_title.text = item.title
+
+                // Formats the episode's description
+                episode_description.text =
+                    HtmlCompat.fromHtml(item.description, HtmlCompat.FROM_HTML_MODE_LEGACY)
+                        .trim()
+
+                episode_link.apply {
+                    // Opens the episode's link
+                    onClick {
+                        val i = Intent(Intent.ACTION_VIEW)
+                        i.data = Uri.parse(item.link)
+                        startActivity(i)
+                    }
                 }
             }
         }
