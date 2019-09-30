@@ -10,7 +10,7 @@ interface ItemFeedDAO {
     fun getAll(): List<ItemFeed>
 
     @Query("SELECT * FROM ItemFeed ORDER BY pubDate DESC")
-    fun getAllSorted(): List<ItemFeed>
+    fun getAllSorted(): LiveData<List<ItemFeed>>
 
     @Query("SELECT * FROM ItemFeed WHERE uid = :id")
     fun getById(id: Int): ItemFeed?

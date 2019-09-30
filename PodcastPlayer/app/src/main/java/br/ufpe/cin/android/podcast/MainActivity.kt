@@ -12,9 +12,13 @@ import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
 import br.ufpe.cin.android.podcast.db.AppDatabase
+import br.ufpe.cin.android.podcast.db.ItemFeed
 import com.google.android.material.snackbar.Snackbar
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.activity_main.*
@@ -45,6 +49,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        val db = AppDatabase.getInstance(this)
+
         val playerServiceIntent = Intent(this, PlayerService::class.java)
         //startService(playerServiceIntent)
         ContextCompat.startForegroundService(this, playerServiceIntent)
@@ -56,6 +62,11 @@ class MainActivity : AppCompatActivity() {
 
         // Hardcoded download links for the feed
         val rssLink = "https://ffkhunion.libsyn.com/rss"
+
+        val model = ViewModelProviders.of(this).get(ItemFeedViewModel::class.java)
+        model.itemFeed.observe(
+            this,
+            Observer { (feedView.adapter as ItemFeedListAdapter).setDataset(it) })
 
         feedView.apply {
             layoutManager = LinearLayoutManager(context)
@@ -102,16 +113,16 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            val currentFeedData = db.itemFeedDAO().getAllSorted()
+            //val currentFeedData = db.itemFeedDAO().getAllSorted().value
 
             uiThread {
-                (feedView.adapter as ItemFeedListAdapter).setDataset(currentFeedData)
+                //(feedView.adapter as ItemFeedListAdapter).setDataset(currentFeedData)
 
                 onButton.setOnClickListener {
                     if (!playerService.isLoaded) {
-                        playerService.load(currentFeedData[0].fileLocation!!)
+                        //playerService.load(currentFeedData[0].fileLocation!!)
                     } else {
-                        playerService.toggle()
+                        //playerService.toggle()
                     }
                 }
 
@@ -160,3 +171,4 @@ class MainActivity : AppCompatActivity() {
         playerIsBound = false
     }
 }
+
