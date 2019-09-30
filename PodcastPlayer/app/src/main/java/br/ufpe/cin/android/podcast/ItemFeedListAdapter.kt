@@ -1,7 +1,6 @@
 package br.ufpe.cin.android.podcast
 
 import android.content.Intent
-import android.media.MediaPlayer
 import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
@@ -33,7 +32,6 @@ class ItemFeedListAdapter(private var myDataset: List<ItemFeed> = emptyList()) :
     override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
         holder.view.apply {
             item_title.apply {
-                //text = myDataset[position].fileLocation ?: "nope"
                 text = myDataset[position].title
 
                 // Starts the EpisodeDetail activity
@@ -66,11 +64,7 @@ class ItemFeedListAdapter(private var myDataset: List<ItemFeed> = emptyList()) :
                 // Opens the episode's download link
                 onClick {
                     if (localFile != null) {
-                        var mp = MediaPlayer()
-                        mp.reset()
-                        mp.setDataSource(context, localFile)
-                        mp.prepare()
-                        mp.start()
+                        // Play
                     } else {
                         val intent = Intent(context, DownloadService::class.java)
                         intent.putExtra("item_uid", myDataset[position].uid)

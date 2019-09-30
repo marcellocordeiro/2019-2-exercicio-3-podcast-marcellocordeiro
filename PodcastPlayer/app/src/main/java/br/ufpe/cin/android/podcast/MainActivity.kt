@@ -1,10 +1,17 @@
 package br.ufpe.cin.android.podcast
 
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
 import android.net.ConnectivityManager
 import android.os.Bundle
+import android.os.IBinder
+import android.os.SystemClock.sleep
 import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import br.ufpe.cin.android.podcast.db.AppDatabase
@@ -18,9 +25,29 @@ import java.net.URL
 
 class MainActivity : AppCompatActivity() {
 
+    private lateinit var playerService: PlayerService
+    private var playerIsBound = false
+
+    private val connection = object : ServiceConnection {
+
+        override fun onServiceConnected(className: ComponentName, service: IBinder) {
+            val binder = service as PlayerService.PlayerBinder
+            playerService = binder.service
+            playerIsBound = true
+        }
+
+        override fun onServiceDisconnected(arg0: ComponentName?) {
+            playerIsBound = false
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        val playerServiceIntent = Intent(this, PlayerService::class.java)
+        //startService(playerServiceIntent)
+        ContextCompat.startForegroundService(this, playerServiceIntent)
 
         // Hides the CollapsingToolbar
         app_bar.setExpanded(false, false)
@@ -43,7 +70,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         setPodcastFeed(rssLink)
-
     }
 
     private fun setPodcastFeed(rssLink: String) {
@@ -81,6 +107,14 @@ class MainActivity : AppCompatActivity() {
             uiThread {
                 (feedView.adapter as ItemFeedListAdapter).setDataset(currentFeedData)
 
+                onButton.setOnClickListener {
+                    if (!playerService.isLoaded) {
+                        playerService.load(currentFeedData[0].fileLocation!!)
+                    } else {
+                        playerService.toggle()
+                    }
+                }
+
                 if (app_bar_image.visibility == View.VISIBLE) {
                     app_bar.setExpanded(true, true)
                 }
@@ -101,5 +135,28 @@ class MainActivity : AppCompatActivity() {
 
     private fun showSnackbar(view: View, message: String, duration: Int = Snackbar.LENGTH_LONG) {
         Snackbar.make(view, message, duration).show()
+    }
+
+    override fun onResume() {
+        super.onResume()
+    }
+
+    override fun onStart() {
+        super.onStart()
+
+        Toast.makeText(this, "Fazendo o Binding...", Toast.LENGTH_SHORT).show()
+        Intent(this, PlayerService::class.java).also { intent ->
+            //intent.action = playerService.ACTION_START_PLAYER_SERVICE
+            bindService(intent, connection, Context.BIND_AUTO_CREATE)
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        //val serviceIntent = Intent(this, PlayerService::class.java)
+        //stopService(serviceIntent)
+        Toast.makeText(applicationContext, "Desfazendo o Binding...", Toast.LENGTH_SHORT).show()
+        unbindService(connection)
+        playerIsBound = false
     }
 }
