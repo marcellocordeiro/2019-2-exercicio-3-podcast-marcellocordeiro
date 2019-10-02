@@ -5,7 +5,7 @@
     android:layout_height="match_parent">
 
     <ProgressBar
-        android:id="@+id/progressBar"
+        android:id="@+id/progress_bar"
         style="?android:attr/progressBarStyle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -16,7 +16,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:fitsSystemWindows="true"
-        android:theme="@style/AppTheme.AppBarOverlay">
+        android:theme="@style/AppTheme.AppBarOverlay"
+        app:expanded="false">
 
         <com.google.android.material.appbar.CollapsingToolbarLayout
             android:id="@+id/toolbar_layout"
@@ -25,22 +26,21 @@
             android:fitsSystemWindows="true"
             app:contentScrim="?attr/colorPrimary"
             app:layout_scrollFlags="scroll|exitUntilCollapsed"
-            app:toolbarId="@+id/toolbar">
+            app:toolbarId="@+id/app_toolbar">
 
             <ImageView
-                android:id="@+id/app_bar_image"
+                android:id="@+id/toolbar_image"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:adjustViewBounds="true"
                 android:contentDescription="@string/channel_banner"
                 android:maxHeight="200dp"
                 android:scaleType="centerCrop"
-                android:visibility="invisible"
-                app:layout_collapseMode="parallax"
-                app:srcCompat="@android:drawable/sym_def_app_icon" />
+                android:visibility="gone"
+                app:layout_collapseMode="parallax" />
 
             <androidx.appcompat.widget.Toolbar
-                android:id="@+id/toolbar"
+                android:id="@+id/app_toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
                 app:layout_collapseMode="pin"
@@ -52,19 +52,5 @@
     <include
         android:id="@+id/include"
         layout="@layout/content_feed" />
-
-    <Button
-        android:id="@+id/offButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="off"
-        app:layout_anchor="@+id/include"
-        app:layout_anchorGravity="top|center" />
-
-    <Button
-        android:id="@+id/onButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="on" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

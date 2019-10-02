@@ -1,74 +1,90 @@
 package br.ufpe.cin.android.podcast
 
+import android.content.Context
 import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.content.ContextCompat.startActivity
+import android.widget.ImageView
+import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import br.ufpe.cin.android.podcast.db.ItemFeed
 import br.ufpe.cin.android.podcast.helpers.DateHelper
-import kotlinx.android.synthetic.main.itemlista.view.*
 import org.jetbrains.anko.sdk27.coroutines.onClick
 
-class ItemFeedListAdapter(private var myDataset: List<ItemFeed> = emptyList()) :
-    RecyclerView.Adapter<ItemFeedListAdapter.ItemFeedViewHolder>() {
+class ItemFeedListAdapter :
+    ListAdapter<ItemFeed, ItemFeedListAdapter.ItemFeedViewHolder>(DIFF_CALLBACK) {
 
-    class ItemFeedViewHolder(val view: View) : RecyclerView.ViewHolder(view)
+    class ItemFeedViewHolder(view: View) : RecyclerView.ViewHolder(view) {
 
-    fun setDataset(newDataset: List<ItemFeed>) {
-        myDataset = newDataset
-        notifyDataSetChanged()
-    }
+        private val title: TextView = view.findViewById(R.id.item_title)
+        private val date: TextView = view.findViewById(R.id.item_date)
+        private val action: ImageView = view.findViewById(R.id.item_action)
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ItemFeedViewHolder {
-        val view =
-            LayoutInflater.from(parent.context).inflate(R.layout.itemlista, parent, false) as View
-        return ItemFeedViewHolder(view)
-    }
+        fun bindTo(item: ItemFeed) {
+            title.apply {
+                text = item.title
 
-    override fun onBindViewHolder(holder: ItemFeedViewHolder, position: Int) {
-        val currentItem = myDataset[position]
-
-        holder.view.apply {
-            item_title.apply {
-                text = currentItem.title
-
-                // Starts the EpisodeDetail activity
                 onClick {
-                    val i = Intent(context, EpisodeDetailActivity::class.java).apply {
+                    // Starts the EpisodeDetail activity
+                    Intent(context, EpisodeDetailActivity::class.java).apply {
                         // Passes the ItemFeed uid to the EpisodeDetail activity
-                        putExtra("item_uid", currentItem.uid)
-                    }
-
-                    startActivity(context, i, null)
+                        putExtra("item_uid", item.uid)
+                    }.also { context.startActivity(it) }
                 }
             }
 
-            item_date.apply {
-                text = DateHelper.parseToString(context, currentItem.pubDate)
+            date.apply {
+                text = DateHelper.parseToString(context, item.pubDate)
             }
 
-            item_action.apply {
-                val fileLocation = currentItem.fileLocation
-
-                if (fileLocation != null) {
-                    this.setImageResource(R.drawable.ic_play_arrow_grey_900_24dp)
+            action.apply {
+                val icon = if (item.fileLocation == null) {
+                    R.drawable.ic_file_download_grey_900_24dp
+                } else {
+                    R.drawable.ic_play_arrow_grey_900_24dp
                 }
 
-                // Opens the episode's download link
+                setImageResource(icon)
+
                 onClick {
-                    if (fileLocation != null) {
-                        // Play
+                    if (item.fileLocation == null) {
+                        Intent(context, DownloadService::class.java).apply {
+                            putExtra("item_uid", item.uid)
+                        }.also { context.startService(it) }
                     } else {
-                        val intent = Intent(context, DownloadService::class.java)
-                        intent.putExtra("item_uid", currentItem.uid)
-                        context.startService(intent)
+                        (context as MainActivity).playerService.load(item)
+                        (context as MainActivity).playerService.play()
                     }
                 }
             }
         }
     }
 
-    override fun getItemCount() = myDataset.size
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ItemFeedViewHolder(
+        LayoutInflater.from(parent.context).inflate(
+            R.layout.itemlista,
+            parent,
+            false
+        )
+    )
+
+    override fun onBindViewHolder(holder: ItemFeedViewHolder, position: Int) {
+        val item = getItem(position) ?: return
+        holder.bindTo(item)
+    }
+
+    companion object {
+        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<ItemFeed>() {
+
+            override fun areItemsTheSame(oldItem: ItemFeed, newItem: ItemFeed) =
+                oldItem.uid == newItem.uid
+
+            override fun areContentsTheSame(oldItem: ItemFeed, newItem: ItemFeed) =
+                oldItem.fileLocation == newItem.fileLocation && oldItem.currentLength == newItem.currentLength
+        }
+    }
+
 }

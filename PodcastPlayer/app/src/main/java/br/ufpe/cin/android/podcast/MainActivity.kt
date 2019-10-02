@@ -1,9 +1,6 @@
 package br.ufpe.cin.android.podcast
 
-import android.content.ComponentName
-import android.content.Context
-import android.content.Intent
-import android.content.ServiceConnection
+import android.content.*
 import android.net.ConnectivityManager
 import android.os.Bundle
 import android.os.IBinder
@@ -16,20 +13,28 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.ListAdapter
 import br.ufpe.cin.android.podcast.db.AppDatabase
-import br.ufpe.cin.android.podcast.db.ItemFeed
 import com.google.android.material.snackbar.Snackbar
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_feed.*
 import org.jetbrains.anko.doAsync
+import org.jetbrains.anko.image
 import org.jetbrains.anko.uiThread
 import java.net.URL
+import android.content.Intent
+import androidx.core.content.ContextCompat.startForegroundService
+import android.os.Build
+import androidx.core.app.ComponentActivity.ExtraData
+import androidx.core.content.ContextCompat.getSystemService
+import android.icu.lang.UCharacter.GraphemeClusterBreak.T
+import android.R.attr.name
+
+
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var playerService: PlayerService
+    lateinit var playerService: PlayerService
     private var playerIsBound = false
 
     private val connection = object : ServiceConnection {
@@ -49,25 +54,30 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val db = AppDatabase.getInstance(this)
-
-        val playerServiceIntent = Intent(this, PlayerService::class.java)
-        //startService(playerServiceIntent)
-        ContextCompat.startForegroundService(this, playerServiceIntent)
+        Intent(applicationContext, PlayerService::class.java).also { intent ->
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(intent)
+            } else {
+                startService(intent)
+            }
+        }
 
         // Hides the CollapsingToolbar
-        app_bar.setExpanded(false, false)
+        //app_bar.setExpanded(false, false)
         toolbar_layout.title = getString(R.string.app_name)
         toolbar_layout.setExpandedTitleColor(0)
 
-        // Hardcoded download links for the feed
-        val rssLink = "https://ffkhunion.libsyn.com/rss"
+        showFeed()
+        updateFeed()
+        showElements()
+    }
 
-        val model = ViewModelProviders.of(this).get(ItemFeedViewModel::class.java)
-        model.itemFeed.observe(
-            this,
-            Observer { (feedView.adapter as ItemFeedListAdapter).setDataset(it) })
+    private fun showElements() {
+        progress_bar.visibility = View.GONE
+        feedView.visibility = View.VISIBLE
+    }
 
+    private fun showFeed() {
         feedView.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = ItemFeedListAdapter()
@@ -80,10 +90,15 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        setPodcastFeed(rssLink)
+        val model = ViewModelProviders.of(this).get(ItemFeedViewModel::class.java)
+        model.itemList.observe(
+            this,
+            Observer { (feedView.adapter as ItemFeedListAdapter).submitList(it) })
     }
 
-    private fun setPodcastFeed(rssLink: String) {
+    private fun updateFeed() {
+        // Hardcoded download links for the feed
+        val rssLink = "https://ffkhunion.libsyn.com/rss"
         val db = AppDatabase.getInstance(this)
 
         doAsync {
@@ -103,34 +118,15 @@ class MainActivity : AppCompatActivity() {
                     val img = Picasso.get().load(imageLink)
 
                     uiThread {
-                        img.into(app_bar_image)
+                        img.into(toolbar_image)
                         app_bar.setExpanded(false, false)
-                        app_bar_image.visibility = View.VISIBLE
+                        toolbar_image.visibility = View.VISIBLE
+                        app_bar.setExpanded(true, true)
                     }
                 } else {
                     // TODO: fix this
                     // app_bar_image.visibility = View.GONE
                 }
-            }
-
-            //val currentFeedData = db.itemFeedDAO().getAllSorted().value
-
-            uiThread {
-                //(feedView.adapter as ItemFeedListAdapter).setDataset(currentFeedData)
-
-                onButton.setOnClickListener {
-                    if (!playerService.isLoaded) {
-                        //playerService.load(currentFeedData[0].fileLocation!!)
-                    } else {
-                        //playerService.toggle()
-                    }
-                }
-
-                if (app_bar_image.visibility == View.VISIBLE) {
-                    app_bar.setExpanded(true, true)
-                }
-
-                progressBar.visibility = View.GONE
             }
         }
     }
@@ -155,8 +151,7 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
 
-        Toast.makeText(this, "Fazendo o Binding...", Toast.LENGTH_SHORT).show()
-        Intent(this, PlayerService::class.java).also { intent ->
+        Intent(applicationContext, PlayerService::class.java).also { intent ->
             //intent.action = playerService.ACTION_START_PLAYER_SERVICE
             bindService(intent, connection, Context.BIND_AUTO_CREATE)
         }
@@ -164,11 +159,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        //val serviceIntent = Intent(this, PlayerService::class.java)
-        //stopService(serviceIntent)
-        Toast.makeText(applicationContext, "Desfazendo o Binding...", Toast.LENGTH_SHORT).show()
         unbindService(connection)
         playerIsBound = false
     }
 }
-

@@ -42,6 +42,6 @@
         app:layout_constraintBottom_toBottomOf="@id/item_date"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@+id/item_title"
-        app:srcCompat="@drawable/ic_file_download_black_24dp" />
+        app:srcCompat="@drawable/ic_file_download_grey_900_24dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

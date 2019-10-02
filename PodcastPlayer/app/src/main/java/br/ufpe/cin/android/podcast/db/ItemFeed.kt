@@ -17,8 +17,4 @@ data class ItemFeed(
 
     @ColumnInfo var fileLocation: String? = null
     @ColumnInfo var currentLength: Int = 0
-
-    override fun toString(): String {
-        return title
-    }
 }

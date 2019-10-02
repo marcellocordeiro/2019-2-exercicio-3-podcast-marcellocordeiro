@@ -16,7 +16,7 @@ interface ItemFeedDAO {
     fun getById(id: Int): ItemFeed?
 
     @Query("UPDATE ItemFeed SET fileLocation = :fl, currentLength = 0 WHERE uid = :id")
-    fun updateFileLocationById(id: Int, fl: String)
+    fun updateFileLocationById(id: Int, fl: String?)
 
     @Query("UPDATE ItemFeed SET currentLength = :cl WHERE uid = :id")
     fun updateCurrentLengthById(id: Int, cl: Int)
