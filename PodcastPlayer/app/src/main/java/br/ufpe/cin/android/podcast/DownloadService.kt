@@ -5,7 +5,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Environment.DIRECTORY_DOWNLOADS
 import android.util.Log
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import br.ufpe.cin.android.podcast.db.AppDatabase
 import java.io.BufferedOutputStream
 import java.io.File
@@ -68,7 +67,7 @@ class DownloadService : IntentService("DownloadHelper") {
             }
 
             db.itemFeedDAO().updateFileLocationById(itemUid, output.absolutePath)
-            LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(DOWNLOAD_COMPLETE))
+            // LocalBroadcastManager.getInstance(this).sendBroadcast(Intent(DOWNLOAD_COMPLETE))
         } catch (e2: IOException) {
             Log.e(javaClass.name, "Exception durante download", e2)
         }

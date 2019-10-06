@@ -47,7 +47,18 @@
                 app:popupTheme="@style/AppTheme.PopupOverlay" />
 
         </com.google.android.material.appbar.CollapsingToolbarLayout>
+
     </com.google.android.material.appbar.AppBarLayout>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/floatingActionButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="16dp"
+        android:clickable="true"
+        app:layout_anchor="@+id/app_bar"
+        app:layout_anchorGravity="end|bottom"
+        app:srcCompat="@drawable/ic_settings_grey_900_24dp" />
 
     <include
         android:id="@+id/include"

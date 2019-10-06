@@ -3,6 +3,7 @@ package br.ufpe.cin.android.podcast
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.text.HtmlCompat
@@ -19,23 +20,32 @@ class EpisodeDetailActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_episode_detail)
 
-        // Takes the ItemFeed object passed by the main activity
+        // Takes the ItemFeed UID passed by the main activity
         val itemUid = intent.getIntExtra("item_uid", -1)
 
+        // Error, but shouldn't *ever* happen
         if (itemUid == -1) {
+            Log.e("PREFCHG", "BOOM")
             finish()
         }
 
-        val db = AppDatabase.getInstance(this)
+        val db = AppDatabase.getInstance(applicationContext)
 
         doAsync {
             val item = db.itemFeedDAO().getById(itemUid)!!
-            val episodeImage = Picasso.get().load(item.imageLink)
+
+            val episodeImage = if (item.imageLink != "") {
+                Picasso.get().load(item.imageLink)
+            } else {
+                null
+            }
 
             uiThread {
 
-                episodeImage.into(episode_image)
-                episode_image.visibility = View.VISIBLE
+                if (episodeImage != null) {
+                    episodeImage.into(episode_image)
+                    episode_image?.visibility = View.VISIBLE
+                }
 
                 episode_title.text = item.title
 

@@ -4,6 +4,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -24,7 +25,6 @@ class PlayerService : Service() {
 
     private lateinit var itemFeedDAO: ItemFeedDAO
 
-    private val CHANNEL_ID = "PlayerServiceChannel"
     private val playerBinder = PlayerBinder()
     private val receiver = Receiver()
 
@@ -72,20 +72,22 @@ class PlayerService : Service() {
     }
 
     private fun createNotification(title: String, description: String, smallIcon: Int) {
+        registerReceiver(receiver, receiver.intentFiter)
+
         val notificationIntent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0)
-
-        IntentFilter().apply {
-            addAction(ACTION_TOGGLE)
-        }.also {
-            registerReceiver(receiver, it)
-        }
 
         val toggleIntent = Intent().apply {
             action = ACTION_TOGGLE
         }
         val togglePendingIntent =
             PendingIntent.getBroadcast(applicationContext, 0, toggleIntent, 0)
+
+        val stopIntent = Intent().apply {
+            action = ACTION_STOP_PLAYER
+        }
+        val stopPendingIntent =
+            PendingIntent.getBroadcast(applicationContext, 0, stopIntent, 0)
 
         val notification = NotificationCompat.Builder(this, CHANNEL_ID).apply {
             setSmallIcon(smallIcon)
@@ -94,6 +96,7 @@ class PlayerService : Service() {
             priority = NotificationCompat.PRIORITY_DEFAULT
             setContentIntent(pendingIntent)
             addAction(R.drawable.ic_pause_grey_900_24dp, "Toggle", togglePendingIntent)
+            addAction(R.drawable.ic_stop_grey_900_24dp, "Close", stopPendingIntent)
         }.build()
 
         startForeground(1, notification)
@@ -137,21 +140,32 @@ class PlayerService : Service() {
     }
 
     fun pause() {
-        createNotification(currentItem?.title ?: "null", "Pause", R.drawable.ic_pause_grey_900_24dp)
+        createNotification(
+            currentItem?.title ?: "null",
+            "Paused",
+            R.drawable.ic_pause_grey_900_24dp
+        )
         player.pause()
 
         val currentTime = player.currentPosition
 
         doAsync { itemFeedDAO.updateCurrentLengthById(currentItem!!.uid, currentTime) }
+    }
 
-        if (!playerBinder.pingBinder()) {
-            stopSelf()
-        }
+    fun stop() {
+        if (currentItem != null) {
+            player.pause()
+            val currentTime = player.currentPosition
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            stopForeground(STOP_FOREGROUND_DETACH)
+            doAsync {
+                itemFeedDAO.updateCurrentLengthById(currentItem!!.uid, currentTime)
+
+                uiThread {
+                    stopSelf()
+                }
+            }
         } else {
-            stopForeground(false)
+            stopSelf()
         }
     }
 
@@ -176,5 +190,26 @@ class PlayerService : Service() {
             "Select a podcast",
             R.drawable.ic_stop_grey_900_24dp
         )
+    }
+
+    inner class Receiver : BroadcastReceiver() {
+
+        val intentFiter: IntentFilter
+            get() = IntentFilter().apply {
+                addAction(ACTION_TOGGLE)
+                addAction(ACTION_STOP_PLAYER)
+            }
+
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action ?: return) {
+                ACTION_TOGGLE -> toggle()
+                ACTION_STOP_PLAYER -> stop()
+            }
+
+        }
+    }
+
+    companion object {
+        const val CHANNEL_ID = "PlayerServiceChannel"
     }
 }

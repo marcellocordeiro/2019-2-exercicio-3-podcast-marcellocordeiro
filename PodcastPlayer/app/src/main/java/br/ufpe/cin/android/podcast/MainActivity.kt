@@ -2,15 +2,16 @@ package br.ufpe.cin.android.podcast
 
 import android.content.*
 import android.net.ConnectivityManager
+import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
-import android.os.SystemClock.sleep
+import android.util.Log
 import android.view.View
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import br.ufpe.cin.android.podcast.db.AppDatabase
@@ -19,48 +20,37 @@ import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_feed.*
 import org.jetbrains.anko.doAsync
-import org.jetbrains.anko.image
+import org.jetbrains.anko.sdk27.coroutines.onClick
 import org.jetbrains.anko.uiThread
 import java.net.URL
-import android.content.Intent
-import androidx.core.content.ContextCompat.startForegroundService
-import android.os.Build
-import androidx.core.app.ComponentActivity.ExtraData
-import androidx.core.content.ContextCompat.getSystemService
-import android.icu.lang.UCharacter.GraphemeClusterBreak.T
-import android.R.attr.name
-
-
 
 class MainActivity : AppCompatActivity() {
 
     lateinit var playerService: PlayerService
     private var playerIsBound = false
 
-    private val connection = object : ServiceConnection {
-
-        override fun onServiceConnected(className: ComponentName, service: IBinder) {
-            val binder = service as PlayerService.PlayerBinder
-            playerService = binder.service
-            playerIsBound = true
-        }
-
-        override fun onServiceDisconnected(arg0: ComponentName?) {
-            playerIsBound = false
-        }
-    }
+    private val receiver = Receiver()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        Intent(applicationContext, PlayerService::class.java).also { intent ->
+        Intent(applicationContext, PlayerService::class.java).also {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(intent)
+                startForegroundService(it)
             } else {
-                startService(intent)
+                startService(it)
             }
         }
+
+        floatingActionButton.onClick {
+            Intent(applicationContext, SettingsActivity::class.java).also {
+                startActivity(it)
+            }
+        }
+
+        LocalBroadcastManager.getInstance(applicationContext)
+            .registerReceiver(receiver, receiver.intentFiter)
 
         // Hides the CollapsingToolbar
         //app_bar.setExpanded(false, false)
@@ -68,8 +58,17 @@ class MainActivity : AppCompatActivity() {
         toolbar_layout.setExpandedTitleColor(0)
 
         showFeed()
-        updateFeed()
         showElements()
+
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
+        val feedLink =
+            sharedPreferences.getString("feed_link", "null") ?: "null"
+
+        if (feedLink == "null") {
+            sharedPreferences.edit().putString("feed_link", "https://ffkhunion.libsyn.com/rss")
+                .apply()
+            updateFeed()
+        }
     }
 
     private fun showElements() {
@@ -78,9 +77,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showFeed() {
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
+
         feedView.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = ItemFeedListAdapter()
+            //setHasFixedSize(true)
 
             addItemDecoration(
                 DividerItemDecoration(
@@ -94,16 +96,30 @@ class MainActivity : AppCompatActivity() {
         model.itemList.observe(
             this,
             Observer { (feedView.adapter as ItemFeedListAdapter).submitList(it) })
+
+        val title = sharedPreferences.getString("cached_title", "unknown") ?: "unknown"
+        val imageLink = sharedPreferences.getString("cached_image_link", "") ?: ""
+
+        toolbar_layout.title = title
+        if (imageLink != "") {
+            val img = Picasso.get().load(imageLink)
+
+            img.into(toolbar_image)
+            app_bar.setExpanded(false, false)
+            toolbar_image.visibility = View.VISIBLE
+            app_bar.setExpanded(true, true)
+        }
     }
 
-    private fun updateFeed() {
-        // Hardcoded download links for the feed
-        val rssLink = "https://ffkhunion.libsyn.com/rss"
+    fun updateFeed() {
         val db = AppDatabase.getInstance(this)
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
+        val feedLink =
+            sharedPreferences.getString("feed_link", "null") ?: "null"
 
         doAsync {
             if (isConnected()) {
-                val rss = URL(rssLink).readText()
+                val rss = URL(feedLink).readText()
                 val newFeed = Parser.parse(rss)
 
                 db.itemFeedDAO().insertAll(*newFeed.toTypedArray())
@@ -127,6 +143,11 @@ class MainActivity : AppCompatActivity() {
                     // TODO: fix this
                     // app_bar_image.visibility = View.GONE
                 }
+
+                sharedPreferences.edit().apply {
+                    putString("cached_title", title ?: "unknown")
+                    putString("cached_image_link", imageLink ?: "")
+                }.apply()
             }
         }
     }
@@ -144,10 +165,6 @@ class MainActivity : AppCompatActivity() {
         Snackbar.make(view, message, duration).show()
     }
 
-    override fun onResume() {
-        super.onResume()
-    }
-
     override fun onStart() {
         super.onStart()
 
@@ -159,7 +176,37 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
+
         unbindService(connection)
         playerIsBound = false
+    }
+
+    private val connection = object : ServiceConnection {
+
+        override fun onServiceConnected(className: ComponentName, service: IBinder) {
+            val binder = service as PlayerService.PlayerBinder
+            playerService = binder.service
+            playerIsBound = true
+        }
+
+        override fun onServiceDisconnected(arg0: ComponentName?) {
+            playerIsBound = false
+        }
+    }
+
+
+    inner class Receiver : BroadcastReceiver() {
+
+        val intentFiter: IntentFilter
+            get() = IntentFilter().apply {
+                addAction(ACTION_RELOAD_FEED)
+            }
+
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action ?: return) {
+                ACTION_RELOAD_FEED -> updateFeed()
+            }
+
+        }
     }
 }

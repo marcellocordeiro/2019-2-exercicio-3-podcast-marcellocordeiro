@@ -1,7 +1,10 @@
 package br.ufpe.cin.android.podcast.db
 
 import androidx.lifecycle.LiveData
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
 
 @Dao
 interface ItemFeedDAO {
@@ -11,6 +14,7 @@ interface ItemFeedDAO {
 
     @Query("SELECT * FROM ItemFeed ORDER BY pubDate DESC")
     fun getAllSorted(): LiveData<List<ItemFeed>>
+    //fun getAllSorted(): DataSource.Factory<Int, ItemFeed>
 
     @Query("SELECT * FROM ItemFeed WHERE uid = :id")
     fun getById(id: Int): ItemFeed?
@@ -23,9 +27,6 @@ interface ItemFeedDAO {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insertAll(vararg entries: ItemFeed)
-
-    @Delete
-    fun delete(entry: ItemFeed)
 
     @Query("DELETE FROM ItemFeed")
     fun deleteAll()

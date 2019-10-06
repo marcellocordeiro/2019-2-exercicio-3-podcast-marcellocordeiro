@@ -1,0 +1,36 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory
+        android:id="@+id/feed_category"
+        app:title="@string/podcast_header">
+
+        <EditTextPreference
+            android:id="@+id/feed_link"
+            app:key="feed_link"
+            app:title="@string/feed_title"
+            app:useSimpleSummaryProvider="true" />
+
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:id="@+id/sync_category"
+        app:title="@string/sync_header">
+
+        <SwitchPreferenceCompat
+            android:id="@+id/sync_master_toggle"
+            app:key="sync_master_toggle"
+            app:title="@string/sync_title" />
+
+        <EditTextPreference
+            android:id="@+id/sync_period"
+            app:defaultValue="12"
+            app:dependency="sync_master_toggle"
+            app:key="sync_period"
+            app:title="@string/sync_period"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

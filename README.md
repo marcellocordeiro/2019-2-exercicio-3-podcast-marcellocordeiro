@@ -30,7 +30,7 @@ Este exercício é baseado no [exercício anterior](https://github.com/if710/201
 | 7 | **sim** |
 | 8 | **sim** |
 | 9 | **sim** |
-| 10 | **não** |
+| 10 | **sim** |
 | 11 | **sim** |
 | 12 | **sim** |
 | 13 | **sim** |

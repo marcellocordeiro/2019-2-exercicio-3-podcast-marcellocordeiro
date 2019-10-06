@@ -1,6 +1,9 @@
 package br.ufpe.cin.android.podcast.db
 
-import androidx.room.*
+import androidx.room.ColumnInfo
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
 
 @Entity(indices = [Index(value = ["title"], unique = true)])
 data class ItemFeed(
@@ -13,8 +16,12 @@ data class ItemFeed(
     @ColumnInfo(name = "downloadLink") val downloadLink: String
 ) {
 
-    @PrimaryKey(autoGenerate = true) var uid: Int = 0
+    @PrimaryKey(autoGenerate = true)
+    var uid: Int = 0
 
-    @ColumnInfo var fileLocation: String? = null
-    @ColumnInfo var currentLength: Int = 0
+    @ColumnInfo
+    var fileLocation: String? = null
+
+    @ColumnInfo
+    var currentLength: Int = 0
 }

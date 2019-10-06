@@ -1,6 +1,5 @@
 package br.ufpe.cin.android.podcast
 
-import android.content.Context
 import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
@@ -15,7 +14,7 @@ import br.ufpe.cin.android.podcast.helpers.DateHelper
 import org.jetbrains.anko.sdk27.coroutines.onClick
 
 class ItemFeedListAdapter :
-    ListAdapter<ItemFeed, ItemFeedListAdapter.ItemFeedViewHolder>(DIFF_CALLBACK) {
+/*Paged*/ListAdapter<ItemFeed, ItemFeedListAdapter.ItemFeedViewHolder>(DIFF_CALLBACK) {
 
     class ItemFeedViewHolder(view: View) : RecyclerView.ViewHolder(view) {
 

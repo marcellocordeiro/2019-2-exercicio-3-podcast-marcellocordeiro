@@ -87,13 +87,13 @@ object Parser {
             }
         }
         return ItemFeed(
-            title!!,
-            link!!,
-            length!!,
-            pubDate!!,
-            description!!,
+            title ?: "unknown",
+            link ?: "",
+            length ?: 0,
+            pubDate ?: 0.toLong(),
+            description ?: "No description",
             imageLink ?: "",
-            downloadLink!!
+            downloadLink ?: ""
         )
     }
 

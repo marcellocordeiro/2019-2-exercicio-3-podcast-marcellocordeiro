@@ -6,5 +6,6 @@ import br.ufpe.cin.android.podcast.db.AppDatabase
 
 class ItemFeedViewModel(application: Application) : AndroidViewModel(application) {
 
-    val itemList = AppDatabase.getInstance(application).itemFeedDAO().getAllSorted()
+    val itemList = AppDatabase.getInstance(application).itemFeedDAO()
+        .getAllSorted()//.toLiveData(pageSize = 20)
 }

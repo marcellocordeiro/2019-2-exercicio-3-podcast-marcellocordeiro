@@ -1,7 +1,18 @@
 <resources>
+
     <string name="app_name">PodcastPlayer</string>
     <string name="using_cached_db_warning">No internet connection, using previously downloaded database.</string>
     <string name="channel_banner">Channel banner</string>
     <string name="download_button">Download button</string>
     <string name="no_cached_database_found">No cached database found.</string>
+    <string name="title_activity_settings">Settings</string>
+
+    <string name="podcast_header">Podcast</string>
+    <string name="sync_header">Sync</string>
+
+    <string name="feed_title">Feed</string>
+
+    <string name="sync_title">Sync feed periodically</string>
+    <string name="sync_period">Sync period (hours)</string>
+
 </resources>
